@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>sign up</title>
+</head>
+<body>
+<h1>Sign Up</h1>
+<hr>
+
+<form>
+    id : <input type="text" id="username"> <br>
+    password : <input type="password" id="password"> <br>
+    email : <input type="email" id="email">
+    <input type="radio" name="role" value="ADMIN,USER"> admin
+    <input type="radio" name="role" value="USER" checked="checked"> user <br>
+    <button type="button" onclick="signup()">Join</button>
+</form>
+<br>
+
+<a href="/auth/login/page">Go to login →</a>
+<script src="/js/jquery/jquery.js"></script>
+<script src="/js/common.js"></script>
+<script>
+    const baseUrl = '/auth/signup';
+
+    const signup = () => {
+        let username = $('#username').val();
+        let password = $('#password').val();
+        let email = $('#email').val();
+        let role = $('input[name=role]:checked').val();
+        let data = {
+            'username': username,
+            'password': password,
+            'email': email,
+            'role': role
+        };
+
+        $.ajax({
+            url: baseUrl,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data)
+        }).done(result => {
+            if (result) {
+                alert('회원가입에 성공하였습니다.');
+                location.href = '/auth/login/page';
+            } else {
+                alert('회원가입에 실패했습니다.');
+            }
+        }).fail((xhr, textStatus, errorThrown) => {
+            commonError(xhr, textStatus, errorThrown);
+        });
+
+    }
+
+</script>
+</body>
+</html>

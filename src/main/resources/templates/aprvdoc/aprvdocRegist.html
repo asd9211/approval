@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>결재문서함</title>
+</head>
+<body>
+<a href="/main">메인화면으로 가기</a><br>
+<hr>
+<div>
+    <span>결재라인</span>
+    <!--팝업 띄워서 조회후 동적으로 순서를 리스트업해야하나 시간 관계상...-->
+    <span>결재자1</span>
+    <input type="text" id="aprvUser1">
+    <span>결재자2</span>
+    <input type="text" id="aprvUser2">
+    <span>결재자3</span>
+    <input type="text" id="aprvUser3">
+    <span>결재자4</span>
+    <input type="text" id="aprvUser4">
+    <span>결재자5</span>
+    <input type="text" id="aprvUser5">
+</div>
+<div>
+    <span>제목</span>
+    <input type="text" id="title">
+</div>
+<div><span>분류</span>
+    <select id="category">
+        <option value="vacation">휴가신청서</option>
+        <option value="business_trip">출장신청서</option>
+        <option value="education">교육훈련신청서</option>
+    </select>
+</div>
+<span>내용</span>
+<input type="text" id="content">
+<button type="button" onclick="aprvSave()">결재상신</button>
+<script src="/js/jquery/jquery.js"></script>
+<script src="/js/common.js"></script>
+<script>
+    const baseUrl = '/aprvdoc';
+    const PROCEED_CODE = '2';
+    const aprvSave = () => {
+        let aprvlineList = [];
+        let aprvOrder = '';
+        for(let i = 1 ; i <= 5; i ++){
+            let username = $('#aprvUser'+i).val();
+
+            if(username != null && username != ''){
+                aprvOrder += '^'+username;
+                let aprvline = {
+                      username : username
+                    , seqNo : i
+                };
+                aprvlineList.push(aprvline);
+            }
+        }
+
+        let data = {
+              username : '[[${username}]]'
+            , title : $('#title').val()
+            , category : $('#category').val()
+            , content : $('#content').val()
+            , docNo :  '[[${username}]]' + '-' + $('#category').val() + '-' + getClock()
+            , aprvOrder : aprvOrder.substr(1)
+            , aprvlineList : aprvlineList
+            , status : PROCEED_CODE
+        } ;
+
+        $.ajax({
+            url: baseUrl,
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            type: 'POST'
+        }).done(result => {
+            if(result){
+                alert('결재가 상신되었습니다.');
+                location.href = '/main';
+            } else {
+                alert('결재상신에 실패했습니다.');
+            }
+        }).fail((xhr, textStatus, errorThrown) => {
+            commonError(xhr, textStatus, errorThrown);
+        });
+    }
+
+    const getClock = () => {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = now.getMonth();
+      const dd = now.getDate();
+      const hour = now.getHours();
+      const minutes = now.getMinutes();
+      const seconds = now.getSeconds();
+      return ''+yyyy+mm+dd+hour+minutes+seconds;
+    }
+
+</script>
+</body>
+</html>

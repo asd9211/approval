@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>결재문서함</title>
+</head>
+<body>
+<a href="/main">메인화면으로 가기</a><br>
+<hr>
+<table id="aprvline">
+
+</table>
+<div>
+    <span>제목</span>
+    <input type="text" id="title"><br>
+    <span>내용</span>
+    <input type="text" id="content"><br>
+    <span>문서번호</span>
+    <input type="text" id="docNo"><br>
+    <span>기안자</span>
+    <input type="text" id="username"><br>
+    <span>작성일</span>
+    <input type="text" id="regDate"><br>
+    <button id="acceptBtn" onclick="accept()" hidden>승인</button>
+    <button id="rejectBtn" onclick="reject()" hidden>기각</button>
+    <div id="aprvCommentDiv" style="margin-top:3%" hidden><span>결재자 코멘트</span><input type="text" id="comment"></div>
+</div>
+<input type="hidden" id="seqNo">
+<script src="/js/jquery/jquery.js"></script>
+<script src="/js/common.js"></script>
+<script>
+    const BASE_URL = '/aprvline';
+    const APRV_REQ = '1';
+    const APRV_WAIT = '2';
+    const APRV_ACCEPT = '3';
+    const APRV_REJECT = '4';
+
+    $(document).ready(async () => {
+        let aprvdoc = await getAprvdoc();
+        let aprvline = await getAprvline();
+
+        $('#title').val(aprvdoc.title);
+        $('#content').val(aprvdoc.content);
+        $('#docNo').val(aprvdoc.docNo);
+        $('#username').val(aprvdoc.username);
+        $('#regDate').val(aprvdoc.regDate);
+        drawAprvline(aprvdoc.aprvlineList);
+
+        if (aprvline != null && aprvline.status == APRV_REQ) {
+            $('#seqNo').val(aprvline.seqNo);
+            document.getElementById('acceptBtn').hidden = false;
+            document.getElementById('rejectBtn').hidden = false;
+            document.getElementById('aprvCommentDiv').hidden = false;
+        }
+    });
+
+    const getAprvdoc = async () => {
+        return new Promise((resolve, reject) => {
+            let queryString = '?docNo=' + '[[${docNo}]]';
+            $.ajax({
+                url: '/aprvdoc/docno' + queryString,
+                type: 'GET'
+
+            }).done(result => {
+                resolve(result);
+
+            }).fail((xhr, textStatus, errorThrown) => {
+                commonError(xhr, textStatus, errorThrown);
+                reject();
+            });
+        });
+    }
+
+    const getAprvline = async () => {
+        return new Promise((resolve, reject) => {
+            let queryString = '/username/docno?docNo=' + '[[${docNo}]]' + '&username=' + '[[${username}]]';
+            $.ajax({
+                url: BASE_URL + queryString,
+                type: 'GET'
+
+            }).done(result => {
+                resolve(result);
+
+            }).fail((xhr, textStatus, errorThrown) => {
+                commonError(xhr, textStatus, errorThrown);
+                reject();
+            });
+        });
+    }
+
+    const getAprvlineAll = async () => {
+        let queryString = '/docno?docNo=' + '[[${docNo}]]';
+        $.ajax({
+            url: BASE_URL + queryString,
+            type: 'GET'
+
+        }).done(result => {
+            drawAprvline(result);
+
+        }).fail((xhr, textStatus, errorThrown) => {
+            commonError(xhr, textStatus, errorThrown);
+        });
+    }
+
+    const accept = () => {
+        let data = {
+            docNo: '[[${docNo}]]'
+            , username: '[[${username}]]'
+            , seqNo: $('#seqNo').val()
+            , comment : $('#comment').val()
+        };
+        $.ajax({
+            url: BASE_URL + '/accept',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            type: 'PUT'
+        }).done(result => {
+            if (result) {
+                alert('결재가 승인되었습니다.');
+                location.href = '/main';
+            } else {
+                alert('결재승인에 실패했습니다.');
+            }
+        }).fail((xhr, textStatus, errorThrown) => {
+            commonError(xhr, textStatus, errorThrown);
+        });
+    }
+
+    const reject = () => {
+        let data = {
+            docNo: '[[${docNo}]]'
+            , username: '[[${username}]]'
+            , seqNo: $('#seqNo').val()
+            , comment : $('#comment').val()
+        };
+        $.ajax({
+            url: BASE_URL + '/reject',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            type: 'PUT'
+        }).done(result => {
+            if (result) {
+                alert('결재가 기각되었습니다.');
+                location.href = '/main';
+            } else {
+                alert('결재기각에 실패했습니다.');
+            }
+        }).fail((xhr, textStatus, errorThrown) => {
+            commonError(xhr, textStatus, errorThrown);
+        });
+    }
+
+    const drawAprvline = (data) => {
+        data.forEach((aprvline, index) => {
+            console.log(aprvline);
+            let aprvDate = isNull(aprvline.aprvDate)?'':aprvline.aprvDate;
+            let statusNm = "";
+            let comment = isNull(aprvline.comment)?'':aprvline.comment;
+            if (aprvline.status == '3') statusNm = '승인';
+            else if (aprvline.status == '4') statusNm = '기각';
+            let html = '<tr>';
+            html += '<td>' + aprvline.username + '</td>';
+            html += '<td>' + statusNm + '</td>';
+            html += '<td>' + aprvDate + '</td>';
+            html += '<td>' + comment  + '</td>';
+            html += '</tr>';
+            document.getElementById('aprvline').innerHTML += html;
+        })
+    }
+
+    const isNull = (obj) => {
+        return obj == null || obj == '' || obj == 'undefined';
+    }
+
+</script>
+</body>
+</html>
