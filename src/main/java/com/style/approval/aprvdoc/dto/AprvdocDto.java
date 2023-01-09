@@ -2,26 +2,31 @@ package com.style.approval.aprvdoc.dto;
 
 import com.style.approval.aprvdoc.entity.AprvdocEntity;
 import com.style.approval.aprvline.dto.AprvlineDto;
-import com.style.approval.user.entity.UserEntity;
-import lombok.*;
+import com.style.approval.enums.DocStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AprvdocDto {
 
-    private AprvdocDto(){}
+    private AprvdocDto() {
+    }
 
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    @Setter
-    @Getter
+    @Data
     public static class Request {
         private String docNo;
         private String title;
         private String content;
-        private UserEntity user;
         private String category;
         private String aprvOrder;
         private String status;
@@ -30,25 +35,11 @@ public class AprvdocDto {
         private LocalDateTime regDate;
         private LocalDateTime endDate;
 
-        public AprvdocEntity toEntity(){
-            return AprvdocEntity.builder()
-                    .docNo(docNo)
-                    .title(getTitle())
-                    .content(getContent())
-                    .regUser(user)
-                    .regDate(LocalDateTime.now())
-                    .status(getStatus())
-                    .category(getCategory())
-                    .aprvOrder(getAprvOrder())
-                    .build();
-        }
-
     }
 
     @Builder
+    @Data
     @AllArgsConstructor
-    @Setter
-    @Getter
     public static class Response {
         private String docNo;
         private String title;
@@ -61,18 +52,19 @@ public class AprvdocDto {
         private LocalDateTime regDate;
         private LocalDateTime endDate;
 
-        public Response(AprvdocEntity aprvdoc){
-                    this.title = aprvdoc.getTitle();
-                    this.content=aprvdoc.getContent();
-                    this.username=aprvdoc.getRegUser().getUsername();
-                    this.docNo=aprvdoc.getDocNo();
-                    this.category=aprvdoc.getCategory();
-                    this.aprvOrder=aprvdoc.getAprvOrder();
-                    this.status=aprvdoc.getStatus();
-                    this.regDate=aprvdoc.getRegDate();
-                    this.endDate=aprvdoc.getEndDate();
-        }
 
+        public Response(AprvdocEntity aprvdocEntity) {
+            this.docNo = aprvdocEntity.getDocNo();
+            this.title = aprvdocEntity.getTitle();
+            this.content = aprvdocEntity.getContent();
+            this.category = aprvdocEntity.getCategory();
+            this.aprvOrder = aprvdocEntity.getAprvOrder();
+            this.status = aprvdocEntity.getStatus();
+            this.username = aprvdocEntity.getRegUser().getUsername();
+            this.aprvlineList = ObjectUtils.isEmpty(aprvdocEntity.getAprvlines()) ? new ArrayList<>() : aprvdocEntity.getAprvlines().stream().map(AprvlineDto.Response::new).collect(Collectors.toList());
+            this.regDate = aprvdocEntity.getRegDate();
+            this.endDate = aprvdocEntity.getEndDate();
+        }
     }
 
 }

@@ -54,6 +54,7 @@ class AprvdocServiceTest {
                     .docNo("2022-11-11")
                     .seqNo((long) i)
                     .username("admin" + i)
+                    .status(i == 1 ? AprvStatus.APRV_REQ.getCode() : AprvStatus.APRV_WAIT.getCode())
                     .build();
             aprvlineDtoList.add(aprvlineDto);
         }
@@ -135,15 +136,9 @@ class AprvdocServiceTest {
 
         //when
         List<AprvdocDto.Response> result = aprvdocService.findInbox(request);
-        AprvlineDto.Request request2 = AprvlineDto.Request.builder()
-                .username(username)
-                .docNo(result.get(0).getDocNo())
-                .build();
-
-        AprvlineDto.Response response = aprvlineService.findByDocNoAndAprvUser(request2);
 
         //then
-        Assertions.assertEquals(AprvStatus.APRV_REQ.getCode(), response.getStatus());
+        Assertions.assertEquals(DocStatus.PROCEED.getCode(), result.get(0).getStatus());
     }
 
     @Test

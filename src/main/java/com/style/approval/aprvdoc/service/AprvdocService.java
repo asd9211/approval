@@ -4,8 +4,8 @@ import com.style.approval.aprvdoc.dto.AprvdocDto;
 import com.style.approval.aprvdoc.entity.AprvdocEntity;
 import com.style.approval.aprvdoc.repository.AprvdocRepository;
 import com.style.approval.aprvline.dto.AprvlineDto;
+import com.style.approval.aprvline.entity.AprvlineEntity;
 import com.style.approval.aprvline.repository.AprvlineRepository;
-import com.style.approval.aprvline.service.AprvlineService;
 import com.style.approval.enums.AprvStatus;
 import com.style.approval.enums.DocStatus;
 import com.style.approval.enums.ErrorCode;
@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.Arrays;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,74 +30,78 @@ import java.util.stream.Collectors;
 public class AprvdocService {
     private final AprvdocRepository aprvdocRepository;
     private final UserRepository userRepository;
-    private final AprvlineService aprvlineService;
     private final AprvlineRepository aprvlineRepository;
 
     public List<AprvdocDto.Response> findAll() {
-        List<AprvdocEntity> aprvdocList = aprvdocRepository.findAll();
-        return parseResDtoList(aprvdocList);
+        return aprvdocRepository.findAll().stream().map(AprvdocDto.Response::new).collect(Collectors.toList());
     }
 
     public AprvdocDto.Response findByDocNo(AprvdocDto.Request request) {
         AprvdocEntity aprvdoc = aprvdocRepository.findByDocNo(request.getDocNo())
                 .orElseThrow(() -> new ServiceException(ErrorCode.DOC_NOT_FOUND));
-
-        List<AprvlineDto.Response> aprvlineDtoList = aprvlineRepository.findByDocNoOrderBySeqNoAsc(request.getDocNo())
-                .stream()
-                .map(aprvline -> new AprvlineDto.Response(aprvline))
-                .collect(Collectors.toList());
-
-        AprvdocDto.Response response = new AprvdocDto.Response(aprvdoc);
-        response.setAprvlineList(aprvlineDtoList);
-
-        return response;
+        return new AprvdocDto.Response(aprvdoc);
     }
 
     public List<AprvdocDto.Response> findByUsername(AprvdocDto.Request request) {
         UserEntity regUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
-        List<AprvdocEntity> aprvdocList = aprvdocRepository.findByRegUserOrderByRegDateDesc(regUser);
-        return parseResDtoList(aprvdocList);
+        return aprvdocRepository.findByRegUserOrderByRegDateDesc(regUser).stream().map(AprvdocDto.Response::new).collect(Collectors.toList());
     }
 
     public List<AprvdocDto.Response> findByUsernameAndStatus(AprvdocDto.Request request) {
         UserEntity regUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
-        List<AprvdocEntity> aprvdocList = aprvdocRepository.findByRegUserAndStatusOrderByRegDateDesc(regUser, request.getStatus());
-        return parseResDtoList(aprvdocList);
+        return aprvdocRepository.findByRegUserAndStatusOrderByRegDateDesc(regUser, request.getStatus()).stream().map(AprvdocDto.Response::new).collect(Collectors.toList());
     }
 
     public List<AprvdocDto.Response> findInbox(AprvdocDto.Request request) {
         UserEntity regUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
-        List<AprvdocEntity> aprvdocList = aprvdocRepository.findInboxJQPL(regUser.getId(), AprvStatus.APRV_REQ.getCode());
-        return parseResDtoList(aprvdocList);
+
+        return aprvlineRepository.findByAprvUserAndStatus(regUser, AprvStatus.APRV_REQ.getCode())
+                .stream()
+                .map(row -> new AprvdocDto.Response(row.getAprvdoc()))
+                .collect(Collectors.toList());
     }
 
     public List<AprvdocDto.Response> findOutbox(AprvdocDto.Request request) {
         UserEntity regUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
-        List<AprvdocEntity> aprvdocList = aprvdocRepository.findByRegUserAndStatusOrderByRegDateDesc(regUser, DocStatus.PROCEED.getCode());
-        return parseResDtoList(aprvdocList);
+
+        return aprvdocRepository.findByRegUserAndStatusOrderByRegDateDesc(regUser, DocStatus.PROCEED.getCode())
+                .stream()
+                .map(AprvdocDto.Response::new)
+                .collect(Collectors.toList());
     }
 
     public List<AprvdocDto.Response> findArchive(AprvdocDto.Request request) {
         UserEntity regUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-        List<AprvdocEntity> aprvdocList = aprvdocRepository
-                .findArchiveJQPL(regUser.getId(), Arrays.asList(DocStatus.ACCEPT.getCode(), DocStatus.REJECT.getCode()));
-
-        return parseResDtoList(aprvdocList);
+        return aprvlineRepository
+                .findByAprvUser(regUser)
+                .stream()
+                .map(row -> new AprvdocDto.Response(row.getAprvdoc()))
+                .filter(row -> row.getStatus().equals(DocStatus.ACCEPT.getCode()) || row.getStatus().equals(DocStatus.REJECT.getCode()))
+                .collect(Collectors.toList());
     }
 
     public boolean addAprvdoc(AprvdocDto.Request request) {
         UserEntity user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-        request.setUser(user);
+        String docNo = request.getDocNo();
 
-        AprvdocEntity aprvdoc = request.toEntity();
+        AprvdocEntity aprvdoc = AprvdocEntity.builder()
+                .docNo(docNo)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .regUser(user)
+                .regDate(LocalDateTime.now())
+                .status(request.getStatus())
+                .category(request.getCategory())
+                .aprvOrder(request.getAprvOrder())
+                .build();
 
         aprvdocRepository.save(aprvdoc);
 
@@ -110,18 +114,20 @@ public class AprvdocService {
             userDupChecker.add(aprvlineDto.getUsername());
 
             aprvlineDto.setDocNo(request.getDocNo());
-            aprvlineDto.setStatus(i == 0 ? AprvStatus.APRV_REQ.getCode() : AprvStatus.APRV_WAIT.getCode());
+            aprvlineDto.setStatus(i == 0 ? AprvStatus.APRV_REQ: AprvStatus.APRV_WAIT);
 
-            aprvlineService.addAprvline(aprvlineDto);
+            AprvlineEntity aprvline = AprvlineEntity.builder()
+                    .docNo(aprvlineDto.getDocNo())
+                    .seqNo(aprvlineDto.getSeqNo())
+                    .status(aprvlineDto.getStatus())
+                    .aprvdoc(aprvdoc)
+                    .aprvUser(user)
+                    .regDate(LocalDateTime.now())
+                    .build();
+
+            aprvlineRepository.save(aprvline);
         }
 
         return aprvdoc.getId() != null;
     }
-
-    public List<AprvdocDto.Response> parseResDtoList(List<AprvdocEntity> aprvdocList) {
-        return aprvdocList.stream()
-                .map(aprvdoc -> new AprvdocDto.Response(aprvdoc))
-                .collect(Collectors.toList());
-    }
-
 }

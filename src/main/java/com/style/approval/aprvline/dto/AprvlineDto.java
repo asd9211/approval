@@ -2,6 +2,7 @@ package com.style.approval.aprvline.dto;
 
 import com.style.approval.aprvdoc.entity.AprvdocEntity;
 import com.style.approval.aprvline.entity.AprvlineEntity;
+import com.style.approval.enums.AprvStatus;
 import com.style.approval.user.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,8 @@ import java.time.LocalDateTime;
 
 public class AprvlineDto {
 
-    private AprvlineDto(){}
+    private AprvlineDto() {
+    }
 
     @Builder
     @AllArgsConstructor
@@ -21,17 +23,16 @@ public class AprvlineDto {
     public static class Request {
         private Long id;
         private String docNo;
-
-        private UserEntity user;
-
-        private AprvdocEntity aprvdoc;
         private Long seqNo;
         private String comment;
         private String username;
         private String status;
 
+        public void setStatus(AprvStatus status) {
+            this.status = status.getCode();
+        }
 
-        public AprvlineEntity toEntity(){
+        public AprvlineEntity toEntity(UserEntity user, AprvdocEntity aprvdoc) {
             return AprvlineEntity.builder()
                     .docNo(docNo)
                     .seqNo(seqNo)
@@ -39,14 +40,13 @@ public class AprvlineDto {
                     .aprvdoc(aprvdoc)
                     .aprvUser(user)
                     .regDate(LocalDateTime.now())
-                    .comment(comment)
                     .build();
         }
+
     }
 
     @Builder
     @AllArgsConstructor
-    @NoArgsConstructor
     @Data
     public static class Response {
         private Long id;
@@ -58,17 +58,16 @@ public class AprvlineDto {
         private LocalDateTime regDate;
         private LocalDateTime aprvDate;
 
-        public Response(AprvlineEntity aprvline){
-            this.id = aprvline.getId();
-            this.docNo = aprvline.getDocNo();
-            this.seqNo = aprvline.getSeqNo();
-            this.comment = aprvline.getComment();
-            this.username = aprvline.getAprvUser().getUsername();
-            this.status = aprvline.getStatus();
-            this.regDate = aprvline.getRegDate();
-            this.aprvDate = aprvline.getAprvDate();
-
+        public Response(AprvlineEntity aprvlineEntity) {
+            this.docNo = aprvlineEntity.getDocNo();
+            this.seqNo = aprvlineEntity.getSeqNo();
+            this.comment = aprvlineEntity.getComment();
+            this.username = aprvlineEntity.getAprvUser().getUsername();
+            this.status = aprvlineEntity.getStatus();
+            this.regDate = aprvlineEntity.getRegDate();
+            this.aprvDate = aprvlineEntity.getAprvDate();
         }
+
     }
 
 }

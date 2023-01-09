@@ -7,6 +7,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -39,6 +40,11 @@ public class AprvdocEntity {
 
     @Column(length = 1)
     private String status;
+
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "aprvdoc", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AprvlineEntity> aprvlines = new ArrayList<AprvlineEntity>();
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reg_user_id")
