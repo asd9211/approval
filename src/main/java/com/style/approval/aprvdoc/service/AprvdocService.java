@@ -5,7 +5,6 @@ import com.style.approval.aprvdoc.entity.AprvdocEntity;
 import com.style.approval.aprvdoc.repository.AprvdocRepository;
 import com.style.approval.aprvline.dto.AprvlineDto;
 import com.style.approval.aprvline.entity.AprvlineEntity;
-import com.style.approval.aprvline.repository.AprvlineRepository;
 import com.style.approval.enums.AprvStatus;
 import com.style.approval.enums.DocStatus;
 import com.style.approval.enums.ErrorCode;

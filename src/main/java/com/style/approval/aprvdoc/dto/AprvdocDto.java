@@ -1,18 +1,13 @@
 package com.style.approval.aprvdoc.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.style.approval.aprvdoc.entity.AprvdocEntity;
 import com.style.approval.aprvline.dto.AprvlineDto;
-import com.style.approval.aprvline.entity.AprvlineEntity;
-import com.style.approval.enums.DocStatus;
-import com.style.approval.user.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.util.ObjectUtils;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;

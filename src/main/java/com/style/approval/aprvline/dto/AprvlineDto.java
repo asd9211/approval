@@ -1,9 +1,7 @@
 package com.style.approval.aprvline.dto;
 
-import com.style.approval.aprvdoc.entity.AprvdocEntity;
 import com.style.approval.aprvline.entity.AprvlineEntity;
 import com.style.approval.enums.AprvStatus;
-import com.style.approval.user.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
