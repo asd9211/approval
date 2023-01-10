@@ -39,71 +39,22 @@ public class AprvlineService {
     }
 
     public AprvlineDto.Response findByDocNoAndAprvUser(AprvlineDto.Request request) {
-        UserEntity user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
+        UserEntity user = findUser(request.getUsername());
 
         AprvlineEntity aprvline = aprvlineRepository.findByDocNoAndAprvUser(request.getDocNo(), user).orElse(null);
 
-        return ObjectUtils.isEmpty(aprvline) ? null : AprvlineDto.Response.builder()
-                .docNo(aprvline.getDocNo())
-                .seqNo(aprvline.getSeqNo())
-                .comment(aprvline.getComment())
-                .status(aprvline.getStatus())
-                .username(aprvline.getAprvUser().getUsername())
-                .aprvDate(aprvline.getAprvDate())
-                .build();
+        return ObjectUtils.isEmpty(aprvline) ? null : new AprvlineDto.Response(aprvline);
     }
 
-    public boolean addAprvline(AprvlineDto.Request request) {
-        UserEntity user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
-
-        AprvdocEntity aprvdoc = aprvdocRepository.findByDocNo(request.getDocNo())
-                .orElseThrow(() -> new ServiceException(ErrorCode.DOC_NOT_FOUND));
-
-        AprvStatus statusCode = AprvStatus.findByAprvStatusCode(request.getStatus());
-
-        AprvlineEntity aprvline = AprvlineEntity.builder()
-                .docNo(request.getDocNo())
-                .seqNo(request.getSeqNo())
-                .status(statusCode.getCode())
-                .aprvdoc(aprvdoc)
-                .aprvUser(user)
-                .regDate(LocalDateTime.now())
-                .build();
-
-        aprvlineRepository.save(aprvline);
-
-        return aprvline.getId() != null;
-    }
-
-    public boolean modifyAprvline(AprvlineDto.Request request) {
-        UserEntity user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
-
-        AprvlineEntity aprvline = aprvlineRepository.findByDocNoAndAprvUser(request.getDocNo(), user)
-                .orElseThrow(() -> new ServiceException(ErrorCode.APRV_NOT_FOUND));
-
-        AprvStatus statusCode = AprvStatus.findByAprvStatusCode(request.getStatus());
-
-        aprvline.setStatus(statusCode.getCode());
-        aprvline.setComment(request.getComment());
-        aprvline.setAprvDate(LocalDateTime.now());
-
-        return aprvline.getId() != null;
-    }
 
     public boolean acceptAprvline(AprvlineDto.Request request) {
         if (isMyTurn(request)) {
-
-            if (!userRepository.existsByUsername(request.getUsername()))
-                throw new ServiceException(ErrorCode.USER_NOT_FOUND);
+            findUser(request.getUsername());
 
             AprvlineEntity aprvline = aprvlineRepository.findByDocNoAndSeqNo(request.getDocNo(), request.getSeqNo())
                     .orElseThrow(() -> new ServiceException(ErrorCode.APRV_NOT_FOUND));
 
-            request.setStatus(AprvStatus.APRV_ACCEPT);
-            aprvline.setStatus(request.getStatus());
+            aprvline.setStatus(AprvStatus.APRV_ACCEPT);
             aprvline.setComment(request.getComment());
             aprvline.setAprvDate(LocalDateTime.now());
 
@@ -117,16 +68,12 @@ public class AprvlineService {
 
     public boolean rejectAprvline(AprvlineDto.Request request) {
         if (isMyTurn(request)) {
-
-            if (!userRepository.existsByUsername(request.getUsername()))
-                throw new ServiceException(ErrorCode.USER_NOT_FOUND);
+            findUser(request.getUsername());
 
             AprvlineEntity aprvline = aprvlineRepository.findByDocNoAndSeqNo(request.getDocNo(), request.getSeqNo())
                     .orElseThrow(() -> new ServiceException(ErrorCode.APRV_NOT_FOUND));
 
-            request.setStatus(AprvStatus.APRV_REJECT);
-
-            aprvline.setStatus(request.getStatus());
+            aprvline.setStatus(AprvStatus.APRV_REJECT);
             aprvline.setComment(request.getComment());
             aprvline.setAprvDate(LocalDateTime.now());
 
@@ -144,7 +91,7 @@ public class AprvlineService {
         for (AprvlineEntity aprvline : aprvlineList) {
             boolean aprvUserCorrect = request.getUsername().equals(aprvline.getAprvUser().getUsername());
 
-            if (aprvUserCorrect && aprvline.getStatus().equals(AprvStatus.APRV_REQ.getCode())) {
+            if (aprvUserCorrect && aprvline.getStatus() == AprvStatus.APRV_REQ) {
                 return true;
             }
         }
@@ -160,7 +107,7 @@ public class AprvlineService {
             completeAprvdoc(request);
             // 다음 결재자가 있을 경우 다음 결재자 상태 update(대기 -> 요청)
         } else {
-            nextAprvline.setStatus(AprvStatus.APRV_REQ.getCode());
+            nextAprvline.setStatus(AprvStatus.APRV_REQ);
         }
     }
 
@@ -168,6 +115,11 @@ public class AprvlineService {
         AprvdocEntity aprvdoc = aprvdocRepository.findByDocNo(request.getDocNo())
                 .orElseThrow(() -> new ServiceException(ErrorCode.APRV_NOT_FOUND));
         aprvdoc.setEndDate(LocalDateTime.now());
-        aprvdoc.setStatus(request.getStatus().equals(AprvStatus.APRV_ACCEPT.getCode()) ? DocStatus.ACCEPT.getCode() : DocStatus.REJECT.getCode());
+        aprvdoc.setStatus(request.getStatus() == AprvStatus.APRV_ACCEPT ? DocStatus.ACCEPT : DocStatus.REJECT);
+    }
+
+    private UserEntity findUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
     }
 }

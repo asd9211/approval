@@ -2,6 +2,7 @@ package com.style.approval.aprvdoc.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.style.approval.aprvline.entity.AprvlineEntity;
+import com.style.approval.enums.DocStatus;
 import com.style.approval.user.entity.UserEntity;
 import lombok.*;
 
@@ -55,5 +56,9 @@ public class AprvdocEntity {
 
     @Column
     private LocalDateTime endDate;
+
+    public void setStatus(DocStatus status){
+        this.status = status.getCode();
+    }
 
 }

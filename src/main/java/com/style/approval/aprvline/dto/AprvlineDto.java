@@ -26,11 +26,7 @@ public class AprvlineDto {
         private Long seqNo;
         private String comment;
         private String username;
-        private String status;
-
-        public void setStatus(AprvStatus status) {
-            this.status = status.getCode();
-        }
+        private AprvStatus status;
 
 
     }
@@ -53,7 +49,7 @@ public class AprvlineDto {
             this.seqNo = aprvlineEntity.getSeqNo();
             this.comment = aprvlineEntity.getComment();
             this.username = aprvlineEntity.getAprvUser().getUsername();
-            this.status = aprvlineEntity.getStatus();
+            this.status = aprvlineEntity.getStatus().getCode();
             this.regDate = aprvlineEntity.getRegDate();
             this.aprvDate = aprvlineEntity.getAprvDate();
         }

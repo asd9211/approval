@@ -1,6 +1,7 @@
 package com.style.approval.aprvline.entity;
 
 import com.style.approval.aprvdoc.entity.AprvdocEntity;
+import com.style.approval.enums.AprvStatus;
 import com.style.approval.user.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,4 +48,12 @@ public class AprvlineEntity {
 
     @Column
     private LocalDateTime aprvDate;
+
+    public void setStatus(AprvStatus status){
+        this.status = status.getCode();
+    }
+
+    public AprvStatus getStatus(){
+        return AprvStatus.findByAprvStatusCode(status);
+    }
 }

@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 public class AprvdocService {
     private final AprvdocRepository aprvdocRepository;
     private final UserRepository userRepository;
-    private final AprvlineRepository aprvlineRepository;
 
     public List<AprvdocDto.Response> findAll() {
         return aprvdocRepository.findAll().stream().map(AprvdocDto.Response::new).collect(Collectors.toList());
@@ -41,20 +40,19 @@ public class AprvdocService {
     }
 
     public List<AprvdocDto.Response> findByUsername(AprvdocDto.Request request) {
-        UserEntity regUser = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
+        UserEntity regUser = findUser(request.getUsername());
+
         return aprvdocRepository.findByRegUserOrderByRegDateDesc(regUser).stream().map(AprvdocDto.Response::new).collect(Collectors.toList());
     }
 
     public List<AprvdocDto.Response> findByUsernameAndStatus(AprvdocDto.Request request) {
-        UserEntity regUser = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
+        UserEntity regUser = findUser(request.getUsername());
+
         return aprvdocRepository.findByRegUserAndStatusOrderByRegDateDesc(regUser, request.getStatus()).stream().map(AprvdocDto.Response::new).collect(Collectors.toList());
     }
 
     public List<AprvdocDto.Response> findInbox(AprvdocDto.Request request) {
-        UserEntity regUser = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
+        UserEntity regUser = findUser(request.getUsername());
 
         return aprvdocRepository.findInbox(regUser, AprvStatus.APRV_REQ.getCode())
                 .stream()
@@ -63,8 +61,7 @@ public class AprvdocService {
     }
 
     public List<AprvdocDto.Response> findOutbox(AprvdocDto.Request request) {
-        UserEntity regUser = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
+        UserEntity regUser = findUser(request.getUsername());
 
         return aprvdocRepository.findByRegUserAndStatusOrderByRegDateDesc(regUser, DocStatus.PROCEED.getCode())
                 .stream()
@@ -73,8 +70,7 @@ public class AprvdocService {
     }
 
     public List<AprvdocDto.Response> findArchive(AprvdocDto.Request request) {
-        UserEntity regUser = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
+        UserEntity regUser = findUser(request.getUsername());
 
         return aprvdocRepository.findArchive(regUser, Arrays.asList(DocStatus.ACCEPT.getCode(), DocStatus.REJECT.getCode()))
                 .stream()
@@ -83,8 +79,7 @@ public class AprvdocService {
     }
 
     public boolean addAprvdoc(AprvdocDto.Request request) {
-        UserEntity user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
+        UserEntity user = findUser(request.getUsername());
 
         String docNo = request.getDocNo();
 
@@ -124,12 +119,17 @@ public class AprvdocService {
             AprvlineEntity aprvline = AprvlineEntity.builder()
                     .docNo(aprvlineDto.getDocNo())
                     .seqNo(aprvlineDto.getSeqNo())
-                    .status(aprvlineDto.getStatus())
+                    .status(aprvlineDto.getStatus().getCode())
                     .aprvUser(aprvUser)
                     .regDate(LocalDateTime.now())
                     .build();
             result.add(aprvline);
         }
         return result;
+    }
+
+    private UserEntity findUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
     }
 }

@@ -11,7 +11,5 @@ public interface AprvlineRepository extends JpaRepository<AprvlineEntity, Long> 
     List<AprvlineEntity> findByDocNoOrderBySeqNoAsc(String docNo);
     Optional<AprvlineEntity> findByDocNoAndSeqNo(String docNo, Long seqNo);
     Optional<AprvlineEntity> findByDocNoAndAprvUser(String docNo, UserEntity aprvUser);
-    List<AprvlineEntity> findByAprvUserAndStatus(UserEntity aprvUser, String status);
-    List<AprvlineEntity> findByAprvUser(UserEntity aprvUser);
 
 }
