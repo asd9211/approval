@@ -44,8 +44,7 @@ public class AprvdocEntity {
 
     @JsonIgnore
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "aprvdoc", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AprvlineEntity> aprvlines = new ArrayList<AprvlineEntity>();
-
+    private List<AprvlineEntity> aprvlines = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reg_user_id")

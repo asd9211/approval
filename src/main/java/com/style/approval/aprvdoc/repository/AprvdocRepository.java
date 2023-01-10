@@ -13,10 +13,10 @@ public interface AprvdocRepository extends JpaRepository<AprvdocEntity, Long> {
     List<AprvdocEntity> findByRegUserOrderByRegDateDesc(UserEntity regUser);
     List<AprvdocEntity> findByRegUserAndStatusOrderByRegDateDesc(UserEntity regUser, String status);
 
-    @Query("select doc from AprvdocEntity doc join doc.aprvlines line where line.aprvUser = :user and line.status = :status")
+    @Query("select doc from AprvdocEntity doc join fetch doc.aprvlines line where line.aprvUser = :user and line.status = :status")
     List<AprvdocEntity> findInbox(UserEntity user, String status);
 
-    @Query("select doc from AprvdocEntity doc join doc.aprvlines line where line.aprvUser = :user and doc.status in (:status)")
+    @Query("select doc from AprvdocEntity doc join fetch doc.aprvlines line where line.aprvUser = :user and doc.status in (:status)")
     List<AprvdocEntity> findArchive(UserEntity user, List<String> status);
 
 }

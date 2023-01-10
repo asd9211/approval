@@ -91,11 +91,18 @@ public class AprvdocService {
                 .regDate(LocalDateTime.now())
                 .status(request.getStatus())
                 .category(request.getCategory())
-                .aprvlines(parseAprvlines(request))
+                .aprvlines(new ArrayList<>())
                 .aprvOrder(request.getAprvOrder())
                 .build();
 
         aprvdocRepository.save(aprvdoc);
+
+        parseAprvlines(request).forEach(
+                row -> {
+                    row.setAprvdoc(aprvdoc);
+                    aprvdoc.getAprvlines().add(row);
+                }
+        );
 
         return true;
     }
