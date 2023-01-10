@@ -32,16 +32,6 @@ public class AprvlineDto {
             this.status = status.getCode();
         }
 
-        public AprvlineEntity toEntity(UserEntity user, AprvdocEntity aprvdoc) {
-            return AprvlineEntity.builder()
-                    .docNo(docNo)
-                    .seqNo(seqNo)
-                    .status(status)
-                    .aprvdoc(aprvdoc)
-                    .aprvUser(user)
-                    .regDate(LocalDateTime.now())
-                    .build();
-        }
 
     }
 

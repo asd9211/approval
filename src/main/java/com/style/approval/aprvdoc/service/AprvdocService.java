@@ -18,9 +18,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,9 +56,9 @@ public class AprvdocService {
         UserEntity regUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-        return aprvlineRepository.findByAprvUserAndStatus(regUser, AprvStatus.APRV_REQ.getCode())
+        return aprvdocRepository.findInbox(regUser, AprvStatus.APRV_REQ.getCode())
                 .stream()
-                .map(row -> new AprvdocDto.Response(row.getAprvdoc()))
+                .map(AprvdocDto.Response::new)
                 .collect(Collectors.toList());
     }
 
@@ -78,11 +76,9 @@ public class AprvdocService {
         UserEntity regUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-        return aprvlineRepository
-                .findByAprvUser(regUser)
+        return aprvdocRepository.findArchive(regUser, Arrays.asList(DocStatus.ACCEPT.getCode(), DocStatus.REJECT.getCode()))
                 .stream()
-                .map(row -> new AprvdocDto.Response(row.getAprvdoc()))
-                .filter(row -> row.getStatus().equals(DocStatus.ACCEPT.getCode()) || row.getStatus().equals(DocStatus.REJECT.getCode()))
+                .map(AprvdocDto.Response::new)
                 .collect(Collectors.toList());
     }
 
@@ -100,34 +96,40 @@ public class AprvdocService {
                 .regDate(LocalDateTime.now())
                 .status(request.getStatus())
                 .category(request.getCategory())
+                .aprvlines(parseAprvlines(request))
                 .aprvOrder(request.getAprvOrder())
                 .build();
 
         aprvdocRepository.save(aprvdoc);
 
+        return true;
+    }
+
+    private List<AprvlineEntity> parseAprvlines(AprvdocDto.Request request) {
         Set<String> userDupChecker = new HashSet<>();
+        List<AprvlineEntity> result = new ArrayList<>();
 
         for (int i = 0; i < request.getAprvlineList().size(); i++) {
             AprvlineDto.Request aprvlineDto = request.getAprvlineList().get(i);
+
+            UserEntity aprvUser = userRepository.findByUsername(aprvlineDto.getUsername())
+                    .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
             if (userDupChecker.contains(aprvlineDto.getUsername())) throw new ServiceException(ErrorCode.APRV_USER_DUP);
             userDupChecker.add(aprvlineDto.getUsername());
 
             aprvlineDto.setDocNo(request.getDocNo());
-            aprvlineDto.setStatus(i == 0 ? AprvStatus.APRV_REQ: AprvStatus.APRV_WAIT);
+            aprvlineDto.setStatus(i == 0 ? AprvStatus.APRV_REQ : AprvStatus.APRV_WAIT);
 
             AprvlineEntity aprvline = AprvlineEntity.builder()
                     .docNo(aprvlineDto.getDocNo())
                     .seqNo(aprvlineDto.getSeqNo())
                     .status(aprvlineDto.getStatus())
-                    .aprvdoc(aprvdoc)
-                    .aprvUser(user)
+                    .aprvUser(aprvUser)
                     .regDate(LocalDateTime.now())
                     .build();
-
-            aprvlineRepository.save(aprvline);
+            result.add(aprvline);
         }
-
-        return aprvdoc.getId() != null;
+        return result;
     }
 }
